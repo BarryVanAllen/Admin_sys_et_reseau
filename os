@@ -98,4 +98,122 @@ void simulations_essais_libres(Pilote pilotes[], char* type_session) {
     
     // Tri des pilotes par temps
     for (int i = 0; i < NB_PILOTES - 1; i++) {
-... (119 lines left)
+        for (int j = 0; j < NB_PILOTES - i - 1; j++) {
+            if (pilotes[j].temps_meilleur_tour > pilotes[j + 1].temps_meilleur_tour) {
+                Pilote temp = pilotes[j];
+                pilotes[j] = pilotes[j + 1];
+                pilotes[j + 1] = temp;
+            }
+        }
+    }
+    
+    afficher_resultats(pilotes, type_session);
+}
+
+void simulations_qualifications(Pilote pilotes[]) {
+    float base_temps = 75.0;  // Temps de base plus rapide
+    
+    // Q1 : Élimination des 5 derniers
+    for (int i = 0; i < NB_PILOTES; i++) {
+        int difficulte = rand() % 8;
+        pilotes[i].temps_meilleur_tour = generer_temps_tour(base_temps, difficulte);
+    }
+    
+    // Tri des pilotes par temps
+    for (int i = 0; i < NB_PILOTES - 1; i++) {
+        for (int j = 0; j < NB_PILOTES - i - 1; j++) {
+            if (pilotes[j].temps_meilleur_tour > pilotes[j + 1].temps_meilleur_tour) {
+                Pilote temp = pilotes[j];
+                pilotes[j] = pilotes[j + 1];
+                pilotes[j + 1] = temp;
+            }
+        }
+    }
+    
+    // Attribution des positions de grille
+    for (int i = 0; i < NB_PILOTES; i++) {
+        pilotes[i].position_grille = i + 1;
+    }
+    
+    afficher_resultats(pilotes, "Qualifications");
+}
+
+void simulation_course(Pilote pilotes[]) {
+    // Simulation basique de la course
+    for (int i = 0; i < NB_PILOTES; i++) {
+        int variation_course = rand() % 5;
+        pilotes[i].temps_meilleur_tour += variation_course;
+    }
+    
+    // Tri final basé sur les temps de course
+    for (int i = 0; i < NB_PILOTES - 1; i++) {
+        for (int j = 0; j < NB_PILOTES - i - 1; j++) {
+            if (pilotes[j].temps_meilleur_tour > pilotes[j + 1].temps_meilleur_tour) {
+                Pilote temp = pilotes[j];
+                pilotes[j] = pilotes[j + 1];
+                pilotes[j + 1] = temp;
+            }
+        }
+    }
+    
+    afficher_resultats(pilotes, "Course Finale");
+}
+
+SDL_Window* creer_fenetre() {
+    SDL_Window* fenetre = SDL_CreateWindow(
+        "Simulation Weekend Formule 1", 
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+        800, 600, 
+        SDL_WINDOW_SHOWN
+    );
+    return fenetre;
+}
+
+void afficher_resultats(Pilote pilotes[], char* titre) {
+    SDL_Window* fenetre = SDL_CreateWindow(
+        titre, 
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
+        800, 600, 
+        SDL_WINDOW_SHOWN
+    );
+    
+    SDL_Renderer* renderer = SDL_CreateRenderer(fenetre, -1, SDL_RENDERER_ACCELERATED);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderClear(renderer);
+    
+    TTF_Font* font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20);
+    
+    SDL_Color couleur_texte = {0, 0, 0, 255};
+    char buffer[200];
+    
+    for (int i = 0; i < NB_PILOTES; i++) {
+        snprintf(buffer, sizeof(buffer), 
+            "%d. %s : %.3f s", 
+            i + 1, 
+            pilotes[i].nom, 
+            pilotes[i].temps_meilleur_tour
+        );
+        
+        SDL_Surface* surface = TTF_RenderText_Solid(font, buffer, couleur_texte);
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+        
+        SDL_Rect position;
+        position.x = 50;
+        position.y = 50 + (i * 30);
+        SDL_QueryTexture(texture, NULL, NULL, &position.w, &position.h);
+        
+        SDL_RenderCopy(renderer, texture, NULL, &position);
+        
+        SDL_FreeSurface(surface);
+        SDL_DestroyTexture(texture);
+    }
+    
+    SDL_RenderPresent(renderer);
+    
+    // Attendre un moment avant de fermer
+    SDL_Delay(5000);
+    
+    SDL_DestroyRenderer(renderer);
+    TTF_CloseFont(font);
+    SDL_DestroyWindow(fenetre);
+}
